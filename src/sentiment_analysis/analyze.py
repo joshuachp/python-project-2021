@@ -15,7 +15,7 @@ class Analyzer():
         input = copy.deepcopy(input_data)
         input.tokenize()
         input.filter()
-        self.tokens: list[str] = input.tokens
+        self.tokens_list: list[list[str]] = input.tokens_list
 
     @staticmethod
     def penn_to_wn(tag: str) -> str:
@@ -44,28 +44,32 @@ class Analyzer():
         return (swn_synset.pos_score(), swn_synset.neg_score(),
                 swn_synset.obj_score())
 
-    def get_sentiment_values(self) -> tuple[int, int, int]:
-        values = [
-            self.get_sentiment(token, tag)
-            for (token, tag) in nltk.pos_tag(self.tokens)
-        ]
-        pos_count = 0
-        neg_count = 0
-        obj_count = 0
-        for (pos, neg, obj) in values:
-            if pos > neg and pos > obj:
-                pos_count += 1
-            elif neg > pos and obj:
-                neg_count += 1
-            else:
-                obj += 1
-        return (pos_count, neg_count, obj_count)
+    def get_sentiment_values(self) -> list[tuple[int, int, int]]:
+        result: list[tuple[int, int, int]] = []
+        for tokens in self.tokens_list:
+            values = [
+                self.get_sentiment(token, tag)
+                for (token, tag) in nltk.pos_tag(tokens)
+            ]
+            pos_count = 0
+            neg_count = 0
+            obj_count = 0
+            for (pos, neg, obj) in values:
+                if pos > neg and pos > obj:
+                    pos_count += 1
+                elif neg > pos and obj:
+                    neg_count += 1
+                else:
+                    obj += 1
+            result.append((pos_count, neg_count, obj_count))
+        return result
 
     def print(self) -> None:
-        [pos, neg, obj] = self.get_sentiment_values()
-        if pos > neg and pos > obj:
-            print("Positive frase 🙂")
-        elif neg > pos and neg > obj:
-            print("Negative frase 🙁")
-        else:
-            print("Neutral frase 😐")
+        values = self.get_sentiment_values()
+        for (i, (pos, neg, obj)) in enumerate(values):
+            if pos > neg and pos > obj:
+                print(f"{i}. Positive frase 🙂")
+            elif neg > pos and neg > obj:
+                print(f"{i}. Negative frase 🙁")
+            else:
+                print(f"{i}. Neutral frase 😐")

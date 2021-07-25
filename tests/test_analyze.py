@@ -3,10 +3,10 @@ from src.sentiment_analysis.input_data import InputData
 
 
 def test_init():
-    input = InputData("This is terribly bad.")
+    input = InputData(["This is terribly bad."])
     analyze = Analyzer(input)
-    assert input.tokens == []
-    assert analyze.tokens == ['terribly', 'bad']
+    assert input.tokens_list == []
+    assert analyze.tokens_list == [['terribly', 'bad']]
 
 
 def test_penn_to_wn():
@@ -19,7 +19,9 @@ def test_get_sentiment():
 
 
 def test_get_sentiment_values():
-    input = InputData("This is terribly bad.")
+    input = InputData(["This is terribly bad."])
     analyzer = Analyzer(input)
-    [pos, neg, obj] = analyzer.get_sentiment_values()
+    res = analyzer.get_sentiment_values()
+    assert len(res) == 1
+    (pos, neg, obj) = res[0]
     assert neg > pos and neg > obj
