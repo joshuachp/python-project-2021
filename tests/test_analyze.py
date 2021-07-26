@@ -21,7 +21,7 @@ def test_get_sentiment():
 def test_get_sentiment_values():
     input = InputData(["This is terribly bad."])
     analyzer = Analyzer(input)
-    res = analyzer.get_sentiment_values()
-    assert len(res) == 1
-    (pos, neg, obj) = res[0]
+    analyzer.get_sentiment_values()
+    assert len(analyzer.sentiment_values) == 1
+    (pos, neg, obj) = analyzer.sentiment_values[0]
     assert neg > pos and neg > obj
