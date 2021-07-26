@@ -10,7 +10,7 @@ class AmazonJsonFile(InputData):
         self.read_json_file()
 
     def read_json_file(self) -> None:
-        if not self.path.is_file and self.path.suffix != '.json':
+        if not (self.path.is_file and self.path.suffix == '.json'):
             raise Exception("Provide a valid path to a json file")
         with open(self.path, 'r') as file:
             data = json.load(file)

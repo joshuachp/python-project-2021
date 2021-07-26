@@ -14,7 +14,7 @@ class TripAdvisorFile(InputData):
     def read_csv_file(self) -> None:
         data: list[str] = []
         ids: list[int] = []
-        if not self.path.is_file and self.path.suffix != '.csv':
+        if not (self.path.is_file and self.path.suffix == '.csv'):
             raise Exception("Provide a valid path to a csv file")
         with open(self.path, 'r') as file:
             csv_data = csv.reader(file,
