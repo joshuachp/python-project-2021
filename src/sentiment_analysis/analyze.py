@@ -2,6 +2,7 @@
 
 import copy
 import csv
+from math import ceil
 from multiprocessing import Pool
 from pathlib import Path
 
@@ -11,6 +12,8 @@ from nltk.corpus import wordnet as wn
 
 from .config import config
 from .input_data import InputData
+
+POOL_SIZE = 6
 
 
 class Analyzer():
@@ -48,39 +51,63 @@ class Analyzer():
         return (swn_synset.pos_score(), swn_synset.neg_score(),
                 swn_synset.obj_score())
 
-    def get_tokens_sentiments(self, tokens: list[str]) -> tuple[int, int, int]:
-        values = [
-            self.get_sentiment(token, tag)
-            for (token, tag) in nltk.pos_tag(tokens)
-        ]
-        pos_count = 0
-        neg_count = 0
-        obj_count = 0
-        for (pos, neg, obj) in values:
-            if pos > neg and pos > obj:
-                pos_count += 1
-            elif neg > pos and obj:
-                neg_count += 1
-            else:
-                obj += 1
-        return (pos_count, neg_count, obj_count)
+    @staticmethod
+    def get_tokens_sentiments(
+            tokens_list: list[list[str]]) -> list[tuple[int, int, int]]:
+        result = []
+        for tokens in tokens_list:
+            values = [
+                Analyzer.get_sentiment(token, tag)
+                for (token, tag) in nltk.pos_tag(tokens)
+            ]
+            pos_count = 0
+            neg_count = 0
+            obj_count = 0
+            for (pos, neg, obj) in values:
+                if pos > neg and pos > obj:
+                    pos_count += 1
+                elif neg > pos and neg > obj:
+                    neg_count += 1
+                else:
+                    obj_count += 1
+            result.append((pos_count, neg_count, obj_count))
+        return result
 
     def get_sentiment_values(self) -> None:
-        self.sentiment_values = []
         print("Start analysis")
-        with Pool(8) as pool:
-            self.sentiment_values = pool.map(self.get_tokens_sentiments,
-                                             self.tokens_list)
+        # Check the length of the token list if it is useful to use multiple processes
+        if len(self.tokens_list) <= POOL_SIZE:
+            self.sentiment_values = self.get_tokens_sentiments(
+                self.tokens_list)
+        else:
+            values = []
+            tokens_chunks = []
+            n_tokens = ceil(len(self.tokens_list) / POOL_SIZE)
+            # Divide the token list into chunks to pass to the pool
+            for i in range(POOL_SIZE - 1):
+                start = i * n_tokens
+                end = start + n_tokens
+                tokens_chunks.append(self.tokens_list[start:end])
+            start = (POOL_SIZE - 1) * n_tokens
+            tokens_chunks.append(self.tokens_list[start:])
+
+            with Pool(POOL_SIZE) as pool:
+                pool_results = pool.map(self.get_tokens_sentiments,
+                                        tokens_chunks)
+            for results in pool_results:
+                for value in results:
+                    values.append(value)
+            self.sentiment_values = values
 
     def print(self) -> None:
         pos_count = 0
         neg_count = 0
         obj_count = 0
         for (i, [pos, neg, obj]) in enumerate(self.sentiment_values):
-            if pos > neg and pos > obj:
+            if pos > neg:
                 pos_count += 1
                 print(f"{i}. Positive frase 🙂")
-            elif neg > pos and neg > obj:
+            elif neg > pos:
                 neg_count += 1
                 print(f"{i}. Negative frase 🙁")
             else:
@@ -91,15 +118,15 @@ class Analyzer():
         )
 
     def save_csv(self, path: Path, ids=None) -> None:
-        if ids == None:
+        if ids is None:
             ids = range(len(self.tokens_list))
         with open(path, "x") as file:
             csv_file = csv.writer(file)
-            for (id, [pos, neg, obj]) in zip(ids, self.sentiment_values):
+            for (i, [pos, neg, obj]) in zip(ids, self.sentiment_values):
                 if pos > neg and pos > obj:
                     res = 'positive'
                 elif neg > pos and neg > obj:
                     res = 'negative'
                 else:
                     res = 'neutral'
-                csv_file.writerow([id, res, pos, neg, obj])
+                csv_file.writerow([i, res, pos, neg, obj])

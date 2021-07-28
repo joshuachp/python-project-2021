@@ -7,6 +7,8 @@ class AmazonJsonFile(InputData):
     def __init__(self, path: Path) -> None:
         super().__init__()
         self.path: Path = path
+        self.stars: list[int] = []
+        # Read the input file
         self.read_json_file()
 
     def read_json_file(self) -> None:
@@ -24,3 +26,4 @@ class AmazonJsonFile(InputData):
             if not ('text' in review and isinstance(review['text'], str)):
                 raise Exception("Error in json schema, missing text field")
             self.data.append(review['text'])
+            self.stars.append(review['stars'])

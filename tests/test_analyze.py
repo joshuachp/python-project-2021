@@ -18,8 +18,13 @@ def test_get_sentiment():
     assert neg > pos and neg > obj
 
 
+def test_get_tokens_sentiment():
+    (pos, neg, obj) = Analyzer.get_tokens_sentiments([['terrible', 'bad']])[0]
+    assert neg > pos and neg > obj
+
+
 def test_get_sentiment_values():
-    input = InputData(["This is terribly bad."])
+    input = InputData(["This is terrible and bad."])
     analyzer = Analyzer(input)
     analyzer.get_sentiment_values()
     assert len(analyzer.sentiment_values) == 1
